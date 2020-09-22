@@ -1,0 +1,11 @@
+{
+  "name": "find-modified-dependent-files",
+  "version": "1.0.0",
+  "repository": "git@github.com:NickHeiner/devtools.git",
+  "author": "Nick Heiner <nth23@cornell.edu>",
+  "license": "MIT",
+  "dependencies": {
+    "execa": "4.0.3",
+    "yargs": "16.0.3"
+  }
+}

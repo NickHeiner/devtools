@@ -5,7 +5,14 @@
   "author": "Nick Heiner <nth23@cornell.edu>",
   "license": "MIT",
   "dependencies": {
+    "dependency-tree": "7.2.1",
     "execa": "4.0.3",
+    "lodash": "4.17.20",
+    "loud-rejection": "2.2.0",
     "yargs": "16.0.3"
+  },
+  "devDependencies": {
+    "@types/dependency-tree": "7.2.0",
+    "@types/lodash": "4.14.161"
   }
 }

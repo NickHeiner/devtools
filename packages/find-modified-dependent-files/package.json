@@ -8,7 +8,8 @@
     "find-modified-dependent-files": "build/index.js"
   },
   "scripts": {
-    "build": "rm -rf build && tsc"
+    "build": "rm -rf build && tsc",
+    "prepublish": "bulid"
   },
   "dependencies": {
     "dependency-tree": "7.2.1",

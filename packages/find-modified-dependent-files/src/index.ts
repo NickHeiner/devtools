@@ -5,6 +5,7 @@ import dependencyTree from 'dependency-tree';
 import 'loud-rejection/register';
 import execa from 'execa';
 import _ from 'lodash';
+import path from 'path';
 
 const {argv} = yargs
   .options({
@@ -32,15 +33,19 @@ const {argv} = yargs
   .help();
 
 async function main() {
-  const dependentFiles = dependencyTree.toList({
+  const absolutePathependentFiles = dependencyTree.toList({
     filename: argv.file,
     directory: argv.allFiles
   });
+  const gitRoot = (await execa('git', ['rev-parse', '--show-toplevel'])).stdout;
+  const dependentFiles = absolutePathependentFiles.map(filePath => path.relative(gitRoot, filePath));
 
-  const mergeBase = await execa('git', ['merge-base', argv.compareRef, argv.mainRef]);
-  const changedFiles = await execa('git', ['diff', `${mergeBase}..${argv.compareRef}`]);
+  const mergeBase = (await execa('git', ['merge-base', argv.compareRef, argv.mainRef])).stdout;
+  const changedFiles = (await execa('git', ['diff', '--name-only', `${mergeBase}..${argv.compareRef}`]))
+    .stdout.split('\n');
 
-  console.log(_.intersection(dependentFiles, changedFiles));
+  const changedDependentFiles = _.intersection(dependentFiles, changedFiles);
+  changedDependentFiles.forEach(filePath => console.log(filePath));
 }
 
 main();

@@ -170,6 +170,18 @@
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.161.tgz#a21ca0777dabc6e4f44f3d07f37b765f54188b18"
   integrity sha512-EP6O3Jkr7bXvZZSZYlsgt5DIjiGr0dXP1/jVEwVLTFgg0d+3lWVQkRavYVQszV7dYUwvg0B8R0MBDpcmXg7XIA==
 
+"@types/yargs-parser@*":
+  version "15.0.0"
+  resolved "https://artifacts.netflix.net/api/npm/npm-netflix/@types/yargs-parser/-/yargs-parser-15.0.0.tgz#cb3f9f741869e20cce330ffbeb9271590483882d"
+  integrity sha1-yz+fdBhp4gzOMw/765JxWQSDiC0=
+
+"@types/yargs@15.0.7":
+  version "15.0.7"
+  resolved "https://artifacts.netflix.net/api/npm/npm-netflix/@types/yargs/-/yargs-15.0.7.tgz#dad50a7a234a35ef9460737a56024287a3de1d2b"
+  integrity sha1-2tUKeiNKNe+UYHN6VgJCh6PeHSs=
+  dependencies:
+    "@types/yargs-parser" "*"
+
 "@typescript-eslint/eslint-plugin@4.2.0":
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/eslint-plugin/-/eslint-plugin-4.2.0.tgz#a3d5c11b377b7e18f3cd9c4e87d465fe9432669b"

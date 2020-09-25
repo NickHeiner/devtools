@@ -293,6 +293,25 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
+      ["@types/yargs", [
+        ["npm:15.0.7", {
+          "packageLocation": "./.yarn/cache/@types-yargs-npm-15.0.7-090d53e1d2-df076111e3.zip/node_modules/@types/yargs/",
+          "packageDependencies": [
+            ["@types/yargs", "npm:15.0.7"],
+            ["@types/yargs-parser", "npm:15.0.0"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
+      ["@types/yargs-parser", [
+        ["npm:15.0.0", {
+          "packageLocation": "./.yarn/cache/@types-yargs-parser-npm-15.0.0-db1d59832c-74bfaefde9.zip/node_modules/@types/yargs-parser/",
+          "packageDependencies": [
+            ["@types/yargs-parser", "npm:15.0.0"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
       ["@typescript-eslint/eslint-plugin", [
         ["virtual:cd23eb93e8d0b186e49103021a157eecb60a3950dd6caac5cdf1fa31b27e2dd0278d6083f229732e95712a1d52a6b6ae26ece2c6232d0fcdcdf9aea9632e8710#npm:4.2.0", {
           "packageLocation": "./.yarn/$$virtual/@typescript-eslint-eslint-plugin-virtual-dd59aa86f1/0/cache/@typescript-eslint-eslint-plugin-npm-4.2.0-c50f64a8b4-925fef9a22.zip/node_modules/@typescript-eslint/eslint-plugin/",
@@ -1715,6 +1734,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["find-modified-dependent-files", "workspace:packages/find-modified-dependent-files"],
             ["@types/dependency-tree", "npm:7.2.0"],
             ["@types/lodash", "npm:4.14.161"],
+            ["@types/yargs", "npm:15.0.7"],
             ["dependency-tree", "npm:7.2.1"],
             ["execa", "npm:4.0.3"],
             ["lodash", "npm:4.17.20"],

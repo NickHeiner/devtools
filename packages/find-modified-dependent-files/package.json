@@ -6,7 +6,8 @@
   "license": "MIT",
   "devDependencies": {
     "@types/dependency-tree": "^7.2.0",
-    "@types/lodash": "^4.14.161"
+    "@types/lodash": "^4.14.161",
+    "@types/yargs": "^15.0.7"
   },
   "dependencies": {
     "dependency-tree": "^7.2.1",

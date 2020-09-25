@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "rm -rf build && tsc",
-    "prepublish": "bulid"
+    "prepublish": "build"
   },
   "dependencies": {
     "dependency-tree": "7.2.1",

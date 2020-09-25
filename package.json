@@ -9,7 +9,6 @@
   "author": "Nick Heiner <nth23@cornell.edu>",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf build && tsc",
     "test": "yarn lint",
     "lint": "eslint packages --ext js,ts,tsx,md --max-warnings 0 --cache",
     "lint:fix": "yarn lint --fix"

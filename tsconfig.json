@@ -1,5 +1,4 @@
 {
-  "include": ["packages/**/*.ts"],
   "exclude": ["**/fixtures/**"],
 
   "compilerOptions": {
@@ -9,8 +8,6 @@
     "checkJs": true,                       
 
     "strict": true,
-
-    "outDir": "build",
     
     "noUnusedLocals": true,
     "noUnusedParameters": true,

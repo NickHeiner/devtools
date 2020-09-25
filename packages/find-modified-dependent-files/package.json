@@ -4,6 +4,12 @@
   "repository": "git@github.com:NickHeiner/devtools.git",
   "author": "Nick Heiner <nth23@cornell.edu>",
   "license": "MIT",
+  "bin": {
+    "find-modified-dependent-files": "build/index.js"
+  },
+  "scripts": {
+    "build": "rm -rf build && tsc"
+  },
   "dependencies": {
     "dependency-tree": "7.2.1",
     "execa": "4.0.3",

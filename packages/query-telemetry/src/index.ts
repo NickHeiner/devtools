@@ -25,8 +25,8 @@ const parser = parse({
 
 type Timespan = {
   name: string;
-  startTime: number;
-  endTime: number;
+  startTimeNs: number;
+  endTimeNs: number;
 }
 
 const timespans: Timespan[] = [];
@@ -40,8 +40,8 @@ function handleRow(row: string[]): void {
   if (rowName === 'TM_TIMESPAN') {
     timespans.push({
       name: row[2],
-      startTime: parseInt(row[3]),
-      endTime: parseInt(row[4]),
+      startTimeNs: parseInt(row[3]),
+      endTimeNs: parseInt(row[4]),
     })
   }
 }
@@ -55,13 +55,13 @@ parser.on('readable', () => {
 
 parser.on('end', () => {
   const table = new CliTable3({
-    head: ['Order', 'Duration', 'Count of Queried Method Calls']
+    head: ['Order', 'Duration (nanoseconds)', 'Count of Queried Method Calls']
   });
 
   _(timespans)
     .sortBy('startTime')
     .forEach((timespan, index) => {
-      table.push([index, timespan.endTime - timespan.startTime]);
+      table.push([index, timespan.endTimeNs - timespan.startTimeNs]);
     });
 
   console.log(table.toString());

@@ -1,10 +1,25 @@
 {
   "name": "devtools",
-  "workspaces": ["find-modified-dependent-files"],
+  "workspaces": [
+    "packages/*"
+  ],
   "description": "Monorepo for local JS development tools",
   "main": "index.js",
   "repository": "git@github.com:NickHeiner/devtools.git",
-  "author": "Nick Heiner <nheiner@netflix.com>",
+  "author": "Nick Heiner <nth23@cornell.edu>",
   "license": "MIT",
-  "private": true
+  "scripts": {
+    "test": "yarn lint",
+    "lint": "eslint packages --ext js,ts,tsx,md --max-warnings 0 --cache",
+    "lint:fix": "yarn lint --fix"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/node": "14.11.2",
+    "@typescript-eslint/eslint-plugin": "4.2.0",
+    "@typescript-eslint/parser": "4.2.0",
+    "eslint": "7.9.0",
+    "eslint-config-nth": "2.0.1",
+    "typescript": "4.0.3"
+  }
 }

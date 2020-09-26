@@ -1,0 +1,26 @@
+{
+  "name": "find-modified-dependent-files",
+  "version": "1.0.0",
+  "repository": "git@github.com:NickHeiner/devtools.git",
+  "author": "Nick Heiner <nth23@cornell.edu>",
+  "license": "MIT",
+  "bin": {
+    "find-modified-dependent-files": "build/index.js"
+  },
+  "scripts": {
+    "build": "rm -rf build && tsc",
+    "prepublish": "yarn build"
+  },
+  "dependencies": {
+    "dependency-tree": "7.2.1",
+    "execa": "4.0.3",
+    "lodash": "4.17.20",
+    "loud-rejection": "2.2.0",
+    "yargs": "16.0.3"
+  },
+  "devDependencies": {
+    "@types/dependency-tree": "7.2.0",
+    "@types/lodash": "4.14.161",
+    "@types/yargs": "15.0.7"
+  }
+}

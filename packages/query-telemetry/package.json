@@ -1,0 +1,26 @@
+{
+  "name": "query-telemetry",
+  "version": "1.0.0",
+  "repository": "git@github.com:NickHeiner/devtools.git",
+  "author": "Nick Heiner <nth23@cornell.edu>",
+  "license": "MIT",
+  "bin": {
+    "query-telemetry": "build/index.js"
+  },
+  "scripts": {
+    "demo": "yarn build && ./build/index.js",
+    "build": "rm -rf build && tsc && chmod a+x ./build/index.js",
+    "prepublish": "yarn build"
+  },
+  "dependencies": {
+    "cli-table3": "0.6.0",
+    "csv-parse": "4.12.0",
+    "lodash": "4.17.20",
+    "loud-rejection": "2.2.0",
+    "yargs": "16.0.3"
+  },
+  "devDependencies": {
+    "@types/lodash": "4.14.161",
+    "@types/yargs": "15.0.7"
+  }
+}

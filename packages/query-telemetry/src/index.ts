@@ -34,6 +34,8 @@ const {argv} = yargs
   .help();
 
 const methodNameRegex = new RegExp(argv.methodNameRegex);
+const methodNameOfZoneName = /^(.+?)(?=::)/;
+const lineNumberOfZoneName = /::ln@([\d]+)$/
 
 const parser = parse({
   relaxColumnCount: true
@@ -48,14 +50,17 @@ type Timeable = {
 
 type Timespan = Timeable & {
   name: string;
+  order: number;
+}
+type MethodCall = Timeable & {
+  name: string;
+  lineNumber: number
 }
 
 const timespans: Timespan[] = [];
 
-// For now, this type is actually the same.
-//
 // Some method calls will not appear in any timespan.
-const methodCalls: Timespan[] = [];
+const methodCalls: MethodCall[] = [];
 
 const throwParseError = (message: string, lineNumber: number) => {
   const err = new Error(`Parse error on 0-indexed line number "${lineNumber}": ${message}`);
@@ -79,6 +84,7 @@ function handleRow(row: string[], rowIndex: number): void {
   if (rowName === 'TM_TIMESPAN') {
     timespans.push({
       name: row[2],
+      order: parseInt(row[1]),
       // This will drop the last few digits of a nanosecond number, but I think that's ok.
       startTimeNs: parseInt(row[3]),
       endTimeNs: parseInt(row[4])
@@ -86,7 +92,7 @@ function handleRow(row: string[], rowIndex: number): void {
     return;
   }
   if (rowName === 'TM_ZONE' && row[1] === mainThreadId && row[2].includes('http')) {
-    const methodNameMatch = /^(.+?)(?=::)/.exec(row[2]);
+    const methodNameMatch = methodNameOfZoneName.exec(row[2]);
     if (!methodNameMatch) {
       throwParseError(`This tool could not parse the following TM_ZONE line: "${row}"`, rowIndex);
       // This return is redundant with the throw above, but otherwise TS won't consider methodNameMatch to be proven
@@ -96,7 +102,17 @@ function handleRow(row: string[], rowIndex: number): void {
     const methodName = methodNameMatch[1];
     const methodStartTimeNs = parseInt(row[3]);
     const methodEndTimeNs = parseInt(row[4]);
-    methodCalls.push({startTimeNs: methodStartTimeNs, endTimeNs: methodEndTimeNs, name: methodName});
+
+    const lineNumberMatch = lineNumberOfZoneName.exec(row[2]);
+    if (!lineNumberMatch) {
+      throwParseError(`This tool could not parse the following TM_ZONE line: "${row}"`, rowIndex);
+      // This return is redundant with the throw above, but otherwise TS won't consider methodNameMatch to be proven
+      // to be non-null.
+      return;
+    }
+    const lineNumber = parseInt(lineNumberMatch[1]);
+
+    methodCalls.push({startTimeNs: methodStartTimeNs, endTimeNs: methodEndTimeNs, name: methodName, lineNumber});
   }
 }
 
@@ -113,11 +129,15 @@ parser.on('readable', () => {
   }
 });
 
-const getMethodCallsForTimespan = (timespan: Timespan) => methodCalls
-  .filter(({startTimeNs, endTimeNs}) => 
-    _.inRange(startTimeNs, timespan.startTimeNs, timespan.endTimeNs) && 
-    _.inRange(endTimeNs, timespan.startTimeNs, timespan.endTimeNs)
-  )
+const methodCallIsInTimespan = (timespan: Timespan, methodCall: MethodCall) => 
+  _.inRange(methodCall.startTimeNs, timespan.startTimeNs, timespan.endTimeNs) && 
+  _.inRange(methodCall.endTimeNs, timespan.startTimeNs, timespan.endTimeNs)
+
+const getMethodCallsForTimespan = (timespan: Timespan) => 
+  methodCalls.filter(methodCall => methodCallIsInTimespan(timespan, methodCall));
+
+const getTimespansForMethodCall = (methodCall: MethodCall) => 
+  timespans.filter(timespan => methodCallIsInTimespan(timespan, methodCall));
 
 const nanosecondsInMilliseconds = 1e6;
 const durationPrecision = 3;
@@ -135,7 +155,7 @@ parser.on('end', () => {
   });
   log.trace({methodCalls});
 
-  const table = new CliTable3({
+  const timespanTable = new CliTable3({
     head: [
       'Order', 'Name', 'Start Time (ns)', 'Duration (ms)', 'Count of all method calls', 
       'Count of Queried Method Calls'
@@ -145,19 +165,35 @@ parser.on('end', () => {
   _(timespans)
     .sortBy('startTimeNs')
     .forEach((timespan, index) => {
-      const methodCalls = getMethodCallsForTimespan(timespan);
+      const methodCallsForTimespan = getMethodCallsForTimespan(timespan);
 
-      table.push([
+      timespanTable.push([
         index, 
         timespan.name,
         timespan.startTimeNs,
         ((timespan.endTimeNs - timespan.startTimeNs) / nanosecondsInMilliseconds).toPrecision(durationPrecision), 
-        methodCalls.length,
-        methodCalls.filter(({name}) => methodNameRegex.test(name)).length
+        methodCallsForTimespan.length,
+        methodCallsForTimespan.filter(({name}) => methodNameRegex.test(name)).length
       ]);
     });
 
-  console.log(table.toString());
+  console.log(timespanTable.toString());
+
+  const methodCallTable = new CliTable3({
+    head: ['Line Number', 'Call Count']
+  });
+
+  _(methodCalls)
+    .filter(({name}) => methodNameRegex.test(name))
+    .filter(methodCall => Boolean(getTimespansForMethodCall(methodCall).length))
+    .groupBy('lineNumber')
+    .toPairs()
+    .sortBy(([, methodCalls]) => methodCalls.length)
+    .forEach(([lineNumber, methodCalls]) => {
+      methodCallTable.push([lineNumber, methodCalls.length]);
+    });
+
+  console.log(methodCallTable.toString());
 });
 
 fs.createReadStream(argv.file).pipe(parser);

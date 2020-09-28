@@ -26,7 +26,7 @@ const {argv} = yargs
     },
     methodNameRegex: {
       alias: 'r',
-      default: 'render',
+      default: '^render$',
       type: 'string',
       description: 'A regex that selects the methods whose calls you want to track'
     }
@@ -50,8 +50,12 @@ type Timespan = Timeable & {
   name: string;
 }
 
-const methodCalls: Timeable[] = [];
 const timespans: Timespan[] = [];
+
+// For now, this type is actually the same.
+//
+// Some method calls will not appear in any timespan.
+const methodCalls: Timespan[] = [];
 
 const throwParseError = (message: string, lineNumber: number) => {
   const err = new Error(`Parse error on 0-indexed line number "${lineNumber}": ${message}`);
@@ -90,12 +94,9 @@ function handleRow(row: string[], rowIndex: number): void {
       return;
     }
     const methodName = methodNameMatch[1];
-    log.debug({methodName});
-    if (methodNameRegex.test(methodName)) {
-      const methodStartTimeNs = parseInt(row[3]);
-      const methodEndTimeNs = parseInt(row[4]);
-      methodCalls.push({startTimeNs: methodStartTimeNs, endTimeNs: methodEndTimeNs});
-    }
+    const methodStartTimeNs = parseInt(row[3]);
+    const methodEndTimeNs = parseInt(row[4]);
+    methodCalls.push({startTimeNs: methodStartTimeNs, endTimeNs: methodEndTimeNs, name: methodName});
   }
 }
 
@@ -118,18 +119,46 @@ const getMethodCallsForTimespan = (timespan: Timespan) => methodCalls
     _.inRange(endTimeNs, timespan.startTimeNs, timespan.endTimeNs)
   )
 
-parser.on('end', () => {
+const nanosecondsInMilliseconds = 1e6;
+const durationPrecision = 3;
 
-  log.debug({timespans, methodCalls});
+parser.on('end', () => {
+  const nonMatchingCalls = _(methodCalls).reject(({name}) => methodNameRegex.test(name)).map('name').value();
+  const otherRenderCalls = _(methodCalls).filter(({name}) => name.includes('render')).map('name').value();
+
+  log.trace({
+    timespans, 
+    // nonMatchingCalls
+    otherRenderCallsLen: otherRenderCalls.length,
+    otherRenderCalls,
+    nonMatchingCallsLen: nonMatchingCalls.length
+  });
+  log.trace({methodCalls});
 
   const table = new CliTable3({
-    head: ['Order', 'Duration (nanoseconds)', 'Count of Queried Method Calls']
+    head: [
+      'Order', 'Name', 'Start Time (ns)', 'Duration (ms)', 'Count of all method calls', 
+      'Count of Queried Method Calls'
+    ]
   });
 
   _(timespans)
-    .sortBy('startTime')
+    .sortBy('startTimeNs')
     .forEach((timespan, index) => {
-      table.push([index, timespan.endTimeNs - timespan.startTimeNs, getMethodCallsForTimespan(timespan).length]);
+      const methodCalls = getMethodCallsForTimespan(timespan);
+
+      if (timespan.startTimeNs === 1600922988176942000) {
+        log.debug(_.map(methodCalls.filter(({name}) => methodNameRegex.test(name)), 'name'));
+      }
+
+      table.push([
+        index, 
+        timespan.name,
+        timespan.startTimeNs,
+        ((timespan.endTimeNs - timespan.startTimeNs) / nanosecondsInMilliseconds).toPrecision(durationPrecision), 
+        methodCalls.length,
+        methodCalls.filter(({name}) => methodNameRegex.test(name)).length
+      ]);
     });
 
   console.log(table.toString());

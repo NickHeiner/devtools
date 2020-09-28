@@ -147,10 +147,6 @@ parser.on('end', () => {
     .forEach((timespan, index) => {
       const methodCalls = getMethodCallsForTimespan(timespan);
 
-      if (timespan.startTimeNs === 1600922988176942000) {
-        log.debug(_.map(methodCalls.filter(({name}) => methodNameRegex.test(name)), 'name'));
-      }
-
       table.push([
         index, 
         timespan.name,

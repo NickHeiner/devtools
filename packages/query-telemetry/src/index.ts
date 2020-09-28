@@ -140,10 +140,12 @@ const getTimespanForMethodCall = (methodCall: MethodCall) =>
   timespans.find(timespan => methodCallIsInTimespan(timespan, methodCall));
 
 const nanosecondsInMilliseconds = 1e6;
-const durationPrecision = 3;
+const numberPrecision = 3;
 
-const durationOfTimespan = (timespan: Timespan) => 
-  ((timespan.endTimeNs - timespan.startTimeNs) / nanosecondsInMilliseconds).toPrecision(durationPrecision);
+const formatNumber = (number: number) => number.toPrecision(numberPrecision);
+
+const durationMsOfTimespan = (timespan: Timespan) => 
+  ((timespan.endTimeNs - timespan.startTimeNs) / nanosecondsInMilliseconds);
 
 parser.on('end', () => {
   const nonMatchingCalls = _(methodCalls).reject(({name}) => methodNameRegex.test(name)).map('name').value();
@@ -174,6 +176,7 @@ parser.on('end', () => {
         index, 
         timespan.name,
         timespan.startTimeNs,        
+        formatNumber(durationMsOfTimespan(timespan)),
         methodCallsForTimespan.length,
         methodCallsForTimespan.filter(({name}) => methodNameRegex.test(name)).length
       ]);
@@ -182,7 +185,7 @@ parser.on('end', () => {
   console.log(timespanTable.toString());
 
   const methodCallTable = new CliTable3({
-    head: ['Line Number', 'Call Count', 'Mean Duration of Containing Timespans']
+    head: ['Line Number', 'Call Count', 'Distinct Timespan Count', 'Mean Duration of Containing Timespans']
   });
 
   _(methodCalls)
@@ -204,11 +207,17 @@ parser.on('end', () => {
     .toPairs()
     .sortBy(([, methodCalls]) => methodCalls.length)
     .forEach(([lineNumber, methodCalls]) => {
-      const meanTimespanDuration = _(methodCalls)
+      const timespansForMethodCall = _(methodCalls)
         .map('timespan')
-        .uniqBy('order')
-        .meanBy(timespan => durationOfTimespan(timespan));
-      methodCallTable.push([lineNumber, methodCalls.length, meanTimespanDuration]);
+        .uniqBy('order');
+      const meanTimespanDuration = timespansForMethodCall.meanBy(timespan => durationMsOfTimespan(timespan));
+
+      methodCallTable.push([
+        lineNumber, 
+        methodCalls.length, 
+        timespansForMethodCall.size(),
+        formatNumber(meanTimespanDuration)
+      ]);
     });
 
   console.log(methodCallTable.toString());

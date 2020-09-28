@@ -35,7 +35,7 @@ const {argv} = yargs
 
 const methodNameRegex = new RegExp(argv.methodNameRegex);
 const methodNameOfZoneName = /^(.+?)(?=::)/;
-const lineNumberOfZoneName = /::ln@([\d]+)$/
+const lineNumberOfZoneName = /::ln@([\d]+)$/;
 
 const parser = parse({
   relaxColumnCount: true
@@ -66,7 +66,7 @@ const throwParseError = (message: string, lineNumber: number) => {
   const err = new Error(`Parse error on 0-indexed line number "${lineNumber}": ${message}`);
   Object.assign(err, {lineNumber});
   throw err;
-}
+};
 
 function handleRow(row: string[], rowIndex: number): void {
   const [rowName] = row;
@@ -131,16 +131,19 @@ parser.on('readable', () => {
 
 const methodCallIsInTimespan = (timespan: Timespan, methodCall: MethodCall) => 
   _.inRange(methodCall.startTimeNs, timespan.startTimeNs, timespan.endTimeNs) && 
-  _.inRange(methodCall.endTimeNs, timespan.startTimeNs, timespan.endTimeNs)
+  _.inRange(methodCall.endTimeNs, timespan.startTimeNs, timespan.endTimeNs);
 
 const getMethodCallsForTimespan = (timespan: Timespan) => 
   methodCalls.filter(methodCall => methodCallIsInTimespan(timespan, methodCall));
 
-const getTimespansForMethodCall = (methodCall: MethodCall) => 
-  timespans.filter(timespan => methodCallIsInTimespan(timespan, methodCall));
+const getTimespanForMethodCall = (methodCall: MethodCall) => 
+  timespans.find(timespan => methodCallIsInTimespan(timespan, methodCall));
 
 const nanosecondsInMilliseconds = 1e6;
 const durationPrecision = 3;
+
+const durationOfTimespan = (timespan: Timespan) => 
+  ((timespan.endTimeNs - timespan.startTimeNs) / nanosecondsInMilliseconds).toPrecision(durationPrecision);
 
 parser.on('end', () => {
   const nonMatchingCalls = _(methodCalls).reject(({name}) => methodNameRegex.test(name)).map('name').value();
@@ -170,8 +173,7 @@ parser.on('end', () => {
       timespanTable.push([
         index, 
         timespan.name,
-        timespan.startTimeNs,
-        ((timespan.endTimeNs - timespan.startTimeNs) / nanosecondsInMilliseconds).toPrecision(durationPrecision), 
+        timespan.startTimeNs,        
         methodCallsForTimespan.length,
         methodCallsForTimespan.filter(({name}) => methodNameRegex.test(name)).length
       ]);
@@ -180,17 +182,33 @@ parser.on('end', () => {
   console.log(timespanTable.toString());
 
   const methodCallTable = new CliTable3({
-    head: ['Line Number', 'Call Count']
+    head: ['Line Number', 'Call Count', 'Mean Duration of Containing Timespans']
   });
 
   _(methodCalls)
     .filter(({name}) => methodNameRegex.test(name))
-    .filter(methodCall => Boolean(getTimespansForMethodCall(methodCall).length))
+    .map(methodCall => {
+      const timespanContainingMethodCall = getTimespanForMethodCall(methodCall);
+      if (!timespanContainingMethodCall) {
+        return null;
+      }
+
+      return {
+        ...methodCall,
+        timespan: timespanContainingMethodCall,
+        // containingTimespanDuration: durationOfTimespan(timespanContainingMethodCall)
+      };
+    })
+    .compact()
     .groupBy('lineNumber')
     .toPairs()
     .sortBy(([, methodCalls]) => methodCalls.length)
     .forEach(([lineNumber, methodCalls]) => {
-      methodCallTable.push([lineNumber, methodCalls.length]);
+      const meanTimespanDuration = _(methodCalls)
+        .map('timespan')
+        .uniqBy('order')
+        .meanBy(timespan => durationOfTimespan(timespan));
+      methodCallTable.push([lineNumber, methodCalls.length, meanTimespanDuration]);
     });
 
   console.log(methodCallTable.toString());

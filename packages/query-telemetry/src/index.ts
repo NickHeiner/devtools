@@ -48,10 +48,9 @@ type Timeable = {
 
 type Timespan = Timeable & {
   name: string;
-  // I may later regret sharing method call pointers between different time spans.
-  methodCalls: Timeable[]
 }
 
+const methodCalls: Timeable[] = [];
 const timespans: Timespan[] = [];
 
 const throwParseError = (message: string, lineNumber: number) => {
@@ -78,13 +77,12 @@ function handleRow(row: string[], rowIndex: number): void {
       name: row[2],
       // This will drop the last few digits of a nanosecond number, but I think that's ok.
       startTimeNs: parseInt(row[3]),
-      endTimeNs: parseInt(row[4]),
-      methodCalls: []
+      endTimeNs: parseInt(row[4])
     });
     return;
   }
   if (rowName === 'TM_ZONE' && row[1] === mainThreadId && row[2].includes('http')) {
-    const methodNameMatch = /^.+?(?=::)/.exec(row[2]);
+    const methodNameMatch = /^(.+?)(?=::)/.exec(row[2]);
     if (!methodNameMatch) {
       throwParseError(`This tool could not parse the following TM_ZONE line: "${row}"`, rowIndex);
       // This return is redundant with the throw above, but otherwise TS won't consider methodNameMatch to be proven
@@ -92,18 +90,11 @@ function handleRow(row: string[], rowIndex: number): void {
       return;
     }
     const methodName = methodNameMatch[1];
-    log.debug({methodName}, 'found method');
+    log.debug({methodName});
     if (methodNameRegex.test(methodName)) {
       const methodStartTimeNs = parseInt(row[3]);
       const methodEndTimeNs = parseInt(row[4]);
-      log.debug({methodStartTimeNs, methodEndTimeNs}, 'found method');
-      timespans
-        .filter(({startTimeNs, endTimeNs}) => 
-          _.inRange(methodStartTimeNs, startTimeNs, endTimeNs) && 
-          _.inRange(methodEndTimeNs, startTimeNs, methodEndTimeNs)
-        ).forEach(
-          ({methodCalls}) => methodCalls.push({startTimeNs: methodStartTimeNs, endTimeNs: methodEndTimeNs})
-        );
+      methodCalls.push({startTimeNs: methodStartTimeNs, endTimeNs: methodEndTimeNs});
     }
   }
 }
@@ -121,7 +112,16 @@ parser.on('readable', () => {
   }
 });
 
+const getMethodCallsForTimespan = (timespan: Timespan) => methodCalls
+  .filter(({startTimeNs, endTimeNs}) => 
+    _.inRange(startTimeNs, timespan.startTimeNs, timespan.endTimeNs) && 
+    _.inRange(endTimeNs, timespan.startTimeNs, timespan.endTimeNs)
+  )
+
 parser.on('end', () => {
+
+  log.debug({timespans, methodCalls});
+
   const table = new CliTable3({
     head: ['Order', 'Duration (nanoseconds)', 'Count of Queried Method Calls']
   });
@@ -129,7 +129,7 @@ parser.on('end', () => {
   _(timespans)
     .sortBy('startTime')
     .forEach((timespan, index) => {
-      table.push([index, timespan.endTimeNs - timespan.startTimeNs, timespan.methodCalls.length]);
+      table.push([index, timespan.endTimeNs - timespan.startTimeNs, getMethodCallsForTimespan(timespan).length]);
     });
 
   console.log(table.toString());
